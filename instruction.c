@@ -17,7 +17,7 @@ void print_instruction(Instruction instr, unsigned addr) {
     printf("%s ", cop_names[instr->instr_generic->_cop]);
     int reg = instr->instr_generic->_regcond;
 
-    switch (instr.instr_generic._cop) {
+    switch (instr->instr_generic->_cop) {
         //Pas d'acces memoire :
         case ILLOP:
         case NOP:
