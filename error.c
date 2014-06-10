@@ -41,7 +41,3 @@ void error(Error err, unsigned addr){
     exit(0);
 }
 
-int main(){
-    warning(WARN_HALT,0x30);
-    error(ERR_IMMEDIATE,0x05);
-}

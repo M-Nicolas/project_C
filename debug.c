@@ -47,7 +47,3 @@ bool debug_ask(Machine *pmach){
     return true;
 }
 
-int main(){
-    debug_ask(NULL);
-    return 0;
-}
