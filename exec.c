@@ -5,13 +5,23 @@
 
 #include "exec.h"
 #include "error.h"
+#include <stdio.h>
 
+/*\
+ * \fn void check_stack(Machine *pmach, unsigned ad_Data, unsigned ad_Instr)
+ * \brief Vérifie qu'on reste bien dans la pile
+ * \param pmach la machine/programme en cours d'exécution
+ * \param ad_Instr l'adresse de l'instruction en cours d'execution
+ * \param ad_Data l'adresse de la donnée dont on a besoin
+ */
 void check_stack(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
-	if (ad_Data < pmach->_dataend)
+	if (ad_Data < pmach->_dataend || ad_Data >= pmach->_datasize)
 		error(ERR_SEGSTACK, ad_Instr);
 }
-//! Vérifie qu'il n'y a pas d'overflow dans le registre de données
-/*!
+
+/*\
+ * \fn void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr)
+ * \brief Vérifie qu'on est bien dans le registre de données (pas d'overflow)
  * \param pmach la machine/programme en cours d'exécution
  * \param ad_Instr l'adresse de l'instruction en cours d'execution
  * \param ad_Data l'adresse de la donnée dont on a besoin
@@ -21,98 +31,53 @@ void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
 		error(ERR_SEGDATA, ad_Instr);
 }
 
-//! Vérifie que l'instruction n'est pas codée en immédiate
-/*!
+
+/*\
+ * \fn void check_not_immediate(Instruction instr, unsigned addr)
+ * \brief Vérifie que l'instruction n'est pas codée en immédiate
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
- * renvoie une erreur si l'instruction est codée en immédiate
+ * renvoie une erreur si l'instruction est adressée en immédiat
  */void check_not_immediate(Instruction instr, unsigned addr) {
 	if (instr.instr_generic._immediate) {
 		error(ERR_IMMEDIATE, addr);
 	}
 }
 
-//! Décodage et exécution de l'instruction LOAD
-/*!
- * \param pmach la machine/programme en cours d'exécution
- * \param instr l'instruction à exécuter
- * \param addr adresse de l'instruction
- * \return true
- */bool load(Machine *pmach, Instruction instr, unsigned addr) {
-	unsigned ad_Data;
-	if (instr.instr_generic._immediate) {
-		pmach->_registers[instr.instr_generic._regcond] =
-				instr.instr_immediate._value;
-	} else {
-		ad_Data = instr.instr_absolute._address;
-		check_overflow(pmach, ad_Data, addr);
-		printf("OK\n");
-		pmach->_registers[instr.instr_generic._regcond] =
-				pmach->_data[ad_Data];
+/*\
+ * \fn unsigned int get_adress(Machine *pmach, Instruction instr)
+ * \brief Récupère l'adresse suivant si l'instruction suit un adressage direct ou indexé (avec un deplacement)
+ * \param pmach le programme en cours d'execution
+ * \param instr l'instruction qu'on est en train de lire
+ * \return la valeur de l'adresse absolue ou après le déplacement effectué
+ */
+unsigned int get_adress(Machine *pmach, Instruction instr) {
+	if (instr.instr_generic._indexed) { // si l'adressage est indexé on effectue le deplacement et on récupère l'adresse
+		return pmach->_registers[instr.instr_indexed._rindex]
+				+ instr.instr_indexed._offset; // on renvoie la valeur du registre plus la valeur de déplacement contenue dans l'offset
 	}
-
-	return true;
+	return instr.instr_absolute._address; // sinon on récupère l'adresse absolue
 }
 
-//! Décodage et exécution de l'instruction STORE
-/*!
+/*\
+ * \fn void refresh_condition(Machine *pmach, unsigned int regcond)
+ * \brief après chaque modification du contenu des registres on remet les conditions à jour
  * \param pmach la machine/programme en cours d'exécution
- * \param instr l'instruction à exécuter
- * \param addr adresse de l'instruction
- * \return true
- */bool store(Machine *pmach, Instruction instr, unsigned addr) {
-	unsigned ad_Data;
-	check_not_immediate(instr, addr);
-	ad_Data = instr.instr_absolute._address;
-	check_overflow(pmach, ad_Data, addr);
-	pmach->_data[ad_Data] = pmach->_registers[instr.instr_generic._regcond];
-	return true;
-}
-
-//! Décodage et exécution de l'instruction ADD
-/*!
- * \param pmach la machine/programme en cours d'exécution
- * \param instr l'instruction à exécuter
- * \param addr adresse de l'instruction
- * \return true
- */bool add(Machine *pmach, Instruction instr, unsigned addr) {
-	unsigned ad_Data;
-	if (instr.instr_generic._immediate) {
-		pmach->_registers[instr.instr_generic._regcond] +=
-				instr.instr_immediate._value;
+ * \param regcond contenu du registre
+ */
+void refresh_condition(Machine *pmach, unsigned int regcond) {
+	if (regcond < 0) {
+		pmach->_cc = CC_N;
+	} else if (regcond == 0) {
+		pmach->_cc = CC_Z;
 	} else {
-		ad_Data = instr.instr_absolute._address;
-		check_overflow(pmach, ad_Data, addr);
-		pmach->_registers[instr.instr_generic._regcond] +=
-				pmach->_data[ad_Data];
+		pmach->_cc = CC_P;
 	}
-
-	return true;
 }
 
-//! Décodage et exécution de l'instruction SUB
-/*!
- * \param pmach la machine/programme en cours d'exécution
- * \param instr l'instruction à exécuter
- * \param addr adresse de l'instruction
- * \return true
- */bool sub(Machine *pmach, Instruction instr, unsigned addr) {
-	unsigned ad_Data;
-	if (instr.instr_generic._immediate) {
-		pmach->_registers[instr.instr_generic._regcond] -=
-				instr.instr_immediate._value;
-	} else {
-		ad_Data = instr.instr_absolute._address;
-		check_overflow(pmach, ad_Data, addr);
-		pmach->_registers[instr.instr_generic._regcond] -=
-				pmach->_data[ad_Data];
-	}
-
-	return true;
-}
-
-//! Affecte pour chaque condition la valeur que doit contenir le code condition de la machine
-/*!
+/*\
+ * \fn bool check_condition(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Affecte pour chaque condition la valeur que doit contenir le code condition de la machine
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
@@ -139,8 +104,95 @@ void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
 	}
 }
 
-//! Décodage et exécution de l'instruction BRANCH
-/*!
+/*\
+ * \fn bool load(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction LOAD
+ * \param pmach la machine/programme en cours d'exécution
+ * \param instr l'instruction à exécuter
+ * \param addr adresse de l'instruction
+ * \return true
+ */bool load(Machine *pmach, Instruction instr, unsigned addr) {
+	unsigned ad_Data;
+	if (instr.instr_generic._immediate) { // si adressage immédiat
+		pmach->_registers[instr.instr_generic._regcond] =
+				instr.instr_immediate._value; // R <- Val
+	} else {
+		ad_Data = get_adress(pmach, instr);
+		check_overflow(pmach, ad_Data, addr);
+		pmach->_registers[instr.instr_generic._regcond] = pmach->_data[ad_Data]; // R <- Data[Addr]
+	}
+	refresh_condition(pmach, pmach->_registers[instr.instr_generic._regcond]);
+
+	return true;
+}
+
+/*\
+ * \fn bool store(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction STORE
+ * \param pmach la machine/programme en cours d'exécution
+ * \param instr l'instruction à exécuter
+ * \param addr adresse de l'instruction
+ * \return true
+ */bool store(Machine *pmach, Instruction instr, unsigned addr) {
+	unsigned ad_Data;
+	check_not_immediate(instr, addr);
+	ad_Data = get_adress(pmach, instr);
+	check_overflow(pmach, ad_Data, addr);
+	pmach->_data[ad_Data] = pmach->_registers[instr.instr_generic._regcond]; // Data[Addr] <- R
+	return true;
+}
+
+/*\
+ * \fn bool add(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction ADD
+ * \param pmach la machine/programme en cours d'exécution
+ * \param instr l'instruction à exécuter
+ * \param addr adresse de l'instruction
+ * \return true
+ */bool add(Machine *pmach, Instruction instr, unsigned addr) {
+	unsigned ad_Data;
+	if (instr.instr_generic._immediate) { // Si adressage immédiat
+		pmach->_registers[instr.instr_generic._regcond] +=
+				instr.instr_immediate._value; // R <- (R) + Val
+	} else {
+		ad_Data = get_adress(pmach, instr);
+		check_overflow(pmach, ad_Data, addr);
+		pmach->_registers[instr.instr_generic._regcond] +=
+				pmach->_data[ad_Data]; // (R) <- R + Data[Addr]
+	}
+	refresh_condition(pmach, pmach->_registers[instr.instr_generic._regcond]);
+
+	return true;
+}
+
+
+/*\
+ * \fn bool sub(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction SUB
+ * \param pmach la machine/programme en cours d'exécution
+ * \param instr l'instruction à exécuter
+ * \param addr adresse de l'instruction
+ * \return true
+ */bool sub(Machine *pmach, Instruction instr, unsigned addr) {
+	unsigned ad_Data;
+	if (instr.instr_generic._immediate) { // Si adressage immédiat
+		pmach->_registers[instr.instr_generic._regcond] -=
+				instr.instr_immediate._value; // R <- (R) - Val
+	} else {
+		ad_Data = get_adress(pmach, instr);
+		check_overflow(pmach, ad_Data, addr);
+		pmach->_registers[instr.instr_generic._regcond] -=
+				pmach->_data[ad_Data]; // R <- (R) + Data[addr]
+	}
+	refresh_condition(pmach, pmach->_registers[instr.instr_generic._regcond]);
+
+	return true;
+}
+
+
+/*\
+ * \fn bool branch(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction BRANCH
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
@@ -149,14 +201,15 @@ void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
 	unsigned ad_Data;
 	check_not_immediate(instr, addr);
 	if (check_condition(pmach, instr, addr)) {
-		ad_Data = instr.instr_absolute._address;
-		pmach->_pc = ad_Data;
+		ad_Data = get_adress(pmach, instr);
+		pmach->_pc = ad_Data; // PC <- Addr
 	}
 	return true;
 }
 
-//! Décodage et exécution de l'instruction CALL
-/*!
+/*\
+ * \fn bool call(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction CALL
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
@@ -165,51 +218,53 @@ void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
 	check_not_immediate(instr, addr);
 	if (check_condition(pmach, instr, addr)) {
 		check_overflow(pmach, pmach->_sp, addr);
-		pmach->_data[pmach->_sp] = pmach->_pc;
-		check_stack(pmach, pmach->_sp--, addr);
-		pmach->_sp--;
-		pmach->_pc = instr.instr_absolute._address;
+		pmach->_data[pmach->_sp] = pmach->_pc; // Data[SP] <- PC
+		check_stack(pmach, pmach->_sp--, addr); // on décrémente sp et verifie qu'on ne sort pas de la pile
+		pmach->_pc = get_adress(pmach, instr); // PC <- Addr
 	}
 	return true;
 }
 
-//! Décodage et exécution de l'instruction RET
-/*!
+
+/*\
+ * \fn bool ret(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction RET
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
  * \return true
  */bool ret(Machine *pmach, Instruction instr, unsigned addr) {
-	check_overflow(pmach, pmach->_sp++, addr);
-	pmach->_sp++;
-	pmach->_pc = pmach->_data[pmach->_sp];
+	check_overflow(pmach, pmach->_sp++, addr); // on incrémente sp et verifie qu'on ne sort pas de la pile
+	pmach->_pc = pmach->_data[pmach->_sp]; // PC <- Data[SP]
 	return true;
 }
 
-//! Décodage et exécution de l'instruction PUSH
-/*!
+/*\
+ * \fn bool push(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction PUSH
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
  * \return true
  */bool push(Machine *pmach, Instruction instr, unsigned addr) {
 	unsigned ad_Data;
-	if (instr.instr_generic._immediate) {
+	if (instr.instr_generic._immediate) { // si adressage immédiat
 		check_overflow(pmach, pmach->_sp, addr);
-		pmach->_data[pmach->_sp] = instr.instr_immediate._value;
+		pmach->_data[pmach->_sp] = instr.instr_immediate._value; // Data[SP] <- Val
 	} else {
 		check_overflow(pmach, pmach->_sp, addr);
-		ad_Data = instr.instr_absolute._address;
+		ad_Data = get_adress(pmach, instr);
 		check_overflow(pmach, ad_Data, addr);
-		pmach->_data[pmach->_sp] = pmach->_data[ad_Data];
+		pmach->_data[pmach->_sp] = pmach->_data[ad_Data]; // Data[SP] <- Data[Addr]
 	}
-	check_stack(pmach, pmach->_sp--, addr);
-	pmach->_sp--;
+	check_stack(pmach, pmach->_sp--, addr); // on décrémente sp et verifie qu'on ne sort pas de la pile
 	return true;
 }
 
-//! Décodage et exécution de l'instruction POP
-/*!
+
+/*\
+ * \fn bool pop(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution de l'instruction POP
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
@@ -218,18 +273,19 @@ void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
 	unsigned ad_Data;
 
 	check_not_immediate(instr, addr);
-	check_stack(pmach, pmach->_sp--, addr);
-	pmach->_sp--;
-	ad_Data = instr.instr_absolute._address;
+	check_stack(pmach, pmach->_sp--, addr); // on décrémente sp et verifie qu'on ne sort pas de la pile
+	ad_Data = get_adress(pmach, instr);
 	check_overflow(pmach, ad_Data, addr);
 	check_overflow(pmach, pmach->_sp, addr);
-	pmach->_data[ad_Data] = pmach->_data[pmach->_sp];
+	pmach->_data[ad_Data] = pmach->_data[pmach->_sp]; // Data[Addr] <- Data[SP]
 
 	return true;
 }
 
-//! Décodage et exécution d'une instruction
-/*!
+
+/*\
+ * \fn bool decode_execute(Machine *pmach, Instruction instr)
+ * \brief Décodage et exécution d'une instruction
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \return faux après l'exécution de \c HALT ; vrai sinon
@@ -269,15 +325,14 @@ void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
 
 //! Trace de l'exécution
 /*!
- * On écrit l'adresse et l'instruction sous forme lisible.
- *
+ * \fn void trace(const char *msg, Machine *pmach, Instruction instr, unsigned addr)
+ * \brief On écrit l'adresse et l'instruction sous forme lisible.
  * \param msg le message de trace
  * \param pmach la machine en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr son adresse
- */
-void trace(const char *msg, Machine *pmach, Instruction instr, unsigned addr) {
+ */void trace(const char *msg, Machine *pmach, Instruction instr, unsigned addr) {
 	printf("TRACE: %s: 0x%04x: ", msg, addr);
-	print_instruction(instr,addr);
+	print_instruction(instr, addr);
 	printf("\n");
 }
