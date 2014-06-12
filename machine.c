@@ -36,12 +36,20 @@ void read_program(Machine *mach, const char *programfile) {
     unsigned int textsize,datasize,dataend;
 
     int n = read(fd,&textsize,sizeof(Word));
-    if (n!=sizeof(Word)) printf("erreur de lecture des bits");
+    if (n!=sizeof(Word)) {
+        printf("Erreur de lecture des bits");
+        exit(1);
+    }
     n = read(fd,&datasize,sizeof(Word));
-    if (n!=sizeof(Word)) printf("erreur de lecture des bits");
+    if (n!=sizeof(Word)) {
+        printf("Erreur de lecture des bits");
+        exit(1);
+    }
     n = read(fd,&dataend,sizeof(Word));
-    if (n!=sizeof(Word)) printf("erreur de lecture des bits");
-
+    if (n!=sizeof(Word)) {
+        printf("Erreur de lecture des bits");
+        exit(1);
+    }
     mach->_textsize=textsize;
     mach->_datasize=datasize;
     mach->_dataend=dataend;
@@ -50,11 +58,15 @@ void read_program(Machine *mach, const char *programfile) {
         n = read(fd,instr,textsize*sizeof(Instruction));
         if (n!=textsize*sizeof(Instruction)) {
             printf("erreur de lecture des bits");
+            exit(1);
         }
 
     Word* data = malloc(datasize*sizeof(Word));
         n = read(fd,data,datasize*sizeof(Word));
-        if (n!=datasize*sizeof(Word))  exit(1);
+        if (n!=datasize*sizeof(Word)) {
+            printf("Erreur de lecture des bits");
+            exit(1);
+        }
 
     //RaZ des registres
     for(int i = 0 ; i < NREGISTERS ; i++)
