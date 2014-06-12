@@ -2,6 +2,7 @@
 
         TEXT    30
         EQU     *
+
         LOAD    R01, #0
         LOAD    R02, #4
 
@@ -16,7 +17,6 @@
 
         LOAD    R03, +3[R01]
         STORE   R03, +3[R02]
-
         HALT
         END
 
@@ -25,7 +25,6 @@
         elem2    WORD    2
         elem3    WORD    3
         elem4    WORD    4
-
         END
         
 
