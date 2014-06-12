@@ -222,7 +222,7 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 	unsigned ad_Data;
 
 	check_not_immediate(instr, addr);
-	check_stack(pmach, pmach->_sp++, addr); // on incrémente sp et verifie qu'on ne sort pas de la pile
+	check_stack(pmach, ++pmach->_sp, addr); // on incrémente sp et verifie qu'on ne sort pas de la pile
 	ad_Data = get_adress(pmach, instr);
 	check_overflow(pmach, ad_Data, addr);
 	check_overflow(pmach, pmach->_sp, addr);
