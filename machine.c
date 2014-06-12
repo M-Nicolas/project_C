@@ -8,32 +8,6 @@
 #include <math.h>
 #include <fcntl.h>
 
-unsigned int binToDec(char* a) {
-    int resultat=0;
-    char* b = a;
-    for(int i=0;i<32;i++) {
-        if (*b++=='1') {
-            resultat+=pow(2,31-i);
-        }
-    }
-    return resultat;
-}
-
-char* decToBin(const unsigned int n) {
-    unsigned bit=0;
-    unsigned mask = 1;
-    char * buffer=malloc((32+1)*sizeof(char));
-    for (int i =0;i<32;++i) {
-        bit = (n&mask)>>i;
-        buffer[32-1-i] = (char)('0'+bit);
-        mask<<=1;
-    }
-    buffer[32]='\0';
-    return buffer;
-}
-
-
-
 void load_program(Machine *pmach,
                   unsigned textsize, Instruction text[textsize],
                   unsigned datasize, Word data[datasize],  unsigned dataend) {
@@ -114,16 +88,20 @@ void dump_memory(Machine *pmach) {
       if (i % 4 == 3)
         printf("\n");
     }
-    if (pmach->_datasize % 4 != 0)
-          printf("\n");
+    if (pmach->_datasize % 4 != 0) printf("\n");
 
     printf("}\n");
     printf("unsigned datasize = %d\n", pmach->_datasize);
     printf("unsigned dataend = %d\n", pmach->_dataend);
 
-    print_program(pmach);
-    print_data(pmach);
-    print_cpu(pmach);
+    FILE* fd=fopen("dump.prog","w");
+    fwrite(&pmach->_textsize,1,sizeof(pmach->_textsize),fd);
+    fwrite(&pmach->_datasize,1,sizeof(pmach->_datasize),fd);
+    fwrite(&pmach->_dataend,1,sizeof(pmach->_dataend),fd);
+    fwrite(pmach->_text,pmach->_textsize,sizeof(Instruction),fd);
+    fwrite(pmach->_data,pmach->_datasize,sizeof(Word),fd);
+    fclose(fd);
+
 }
 
 void print_program(Machine *pmach) {
@@ -141,7 +119,8 @@ void print_program(Machine *pmach) {
 void print_data(Machine *pmach) {
     printf("\n*** DATA Datasize= %d, end= 0x%08x (%d) ***\n\n",pmach->_datasize,pmach->_dataend,pmach->_dataend);
     for (int i=0;i<pmach->_datasize;i++) {
-        printf("0x%04x: 0x%08x %d \n",i,pmach->_data[i],pmach->_data[i]);
+        printf("0x%04x: 0x%08x %d \t",i,pmach->_data[i],pmach->_data[i]);
+        if (i%3==0) printf("\n");
     }
     printf("\n");
 }
@@ -168,7 +147,8 @@ void print_cpu(Machine *pmach) {
     printf("PC: 0x%08x CC: %c \n\n",pmach->_pc,c);
 
     for (int i=0;i<NREGISTERS;i++) {
-        printf("R%02d : 0x%08x %d \n",i,pmach->_registers[i],pmach->_registers[i]);
+        printf("R%02d : 0x%08x %d \t",i,pmach->_registers[i],pmach->_registers[i]);
+        if (i%3==0) printf("\n");
     }
     printf("\n");
 }
@@ -179,7 +159,7 @@ void simul(Machine *pmach, bool debug) {
     while (1) {
 
         if (pmach->_pc>=pmach->_textsize) {
-            exit(1);
+            error(ERR_SEGTEXT, pmach->_pc - 1);
         }
 
         trace("Execution de", pmach, pmach->_text[pmach->_pc], pmach->_pc);
