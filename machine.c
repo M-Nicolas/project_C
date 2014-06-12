@@ -29,6 +29,10 @@ void load_program(Machine *pmach,
 void read_program(Machine *mach, const char *programfile) {
 
     int fd=open(programfile,O_RDONLY);
+    if (fd<0) {
+        printf("Erreur lors de l'ouverture du fichier");
+        exit(1);
+    }
     unsigned int textsize,datasize,dataend;
 
     int n = read(fd,&textsize,sizeof(Word*));
@@ -41,17 +45,16 @@ void read_program(Machine *mach, const char *programfile) {
     mach->_textsize=textsize;
     mach->_datasize=datasize;
     mach->_dataend=dataend;
-    if (dataend>=datasize-1) exit(1);
 
     Instruction* instr = malloc(textsize*sizeof(Instruction));
-        n = read(fd,instr,textsize*sizeof(Word*));
-        if (n!=sizeof(Word*)) {
-            exit(1);
+        n = read(fd,instr,textsize*sizeof(Instruction));
+        if (n!=sizeof(Instruction)) {
+            printf("erreur de lecture des bits");
         }
 
     Word* data = malloc(datasize*sizeof(Word));
-        n = read(fd,data,datasize*sizeof(Word*));
-        if (n!=sizeof(Word*))  exit(1);
+        n = read(fd,data,datasize*sizeof(Word));
+        if (n!=sizeof(Word))  exit(1);
 
     //RaZ des registres
     for(int i = 0 ; i < NREGISTERS ; i++)
@@ -62,6 +65,7 @@ void read_program(Machine *mach, const char *programfile) {
     mach->_pc=0;
     mach->_cc=CC_U;
     mach->_sp=datasize-1;
+    close(fd);
 
 }
 
