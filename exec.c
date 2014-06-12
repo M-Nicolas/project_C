@@ -31,7 +31,6 @@ void check_overflow(Machine *pmach, unsigned ad_Data, unsigned ad_Instr) {
 		error(ERR_SEGDATA, ad_Instr);
 }
 
-
 /*\
  * \fn void check_not_immediate(Instruction instr, unsigned addr)
  * \brief Vérifie que l'instruction n'est pas codée en immédiate
@@ -105,28 +104,6 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 }
 
 /*\
- * \fn bool load(Machine *pmach, Instruction instr, unsigned addr)
- * \brief Décodage et exécution de l'instruction LOAD
- * \param pmach la machine/programme en cours d'exécution
- * \param instr l'instruction à exécuter
- * \param addr adresse de l'instruction
- * \return true
- */bool load(Machine *pmach, Instruction instr, unsigned addr) {
-	unsigned ad_Data;
-	if (instr.instr_generic._immediate) { // si adressage immédiat
-		pmach->_registers[instr.instr_generic._regcond] =
-				instr.instr_immediate._value; // R <- Val
-	} else {
-		ad_Data = get_adress(pmach, instr);
-		check_overflow(pmach, ad_Data, addr);
-		pmach->_registers[instr.instr_generic._regcond] = pmach->_data[ad_Data]; // R <- Data[Addr]
-	}
-	refresh_condition(pmach, pmach->_registers[instr.instr_generic._regcond]);
-
-	return true;
-}
-
-/*\
  * \fn bool store(Machine *pmach, Instruction instr, unsigned addr)
  * \brief Décodage et exécution de l'instruction STORE
  * \param pmach la machine/programme en cours d'exécution
@@ -143,22 +120,34 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 }
 
 /*\
- * \fn bool add(Machine *pmach, Instruction instr, unsigned addr)
+ * \fn bool modify_register(Machine *pmach, Instruction instr, unsigned addr)
  * \brief Décodage et exécution de l'instruction ADD
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
  * \return true
- */bool add(Machine *pmach, Instruction instr, unsigned addr) {
+ */bool modify_register(Machine *pmach, Instruction instr, unsigned addr, int cop) {
 	unsigned ad_Data;
-	if (instr.instr_generic._immediate) { // Si adressage immédiat
-		pmach->_registers[instr.instr_generic._regcond] +=
-				instr.instr_immediate._value; // R <- (R) + Val
-	} else {
-		ad_Data = get_adress(pmach, instr);
-		check_overflow(pmach, ad_Data, addr);
-		pmach->_registers[instr.instr_generic._regcond] +=
-				pmach->_data[ad_Data]; // (R) <- R + Data[Addr]
+	if (cop == 0) { // instruction LOAD
+		if (instr.instr_generic._immediate) { // si adressage immédiat
+			pmach->_registers[instr.instr_generic._regcond] =
+					instr.instr_immediate._value; // R <- Val
+		} else {
+			ad_Data = get_adress(pmach, instr);
+			check_overflow(pmach, ad_Data, addr);
+			pmach->_registers[instr.instr_generic._regcond] =
+					pmach->_data[ad_Data]; // R <- Data[Addr]
+		}
+	} else { // instruction ADD et SUB; si cop == -1 -> SUB, si cop == 1 -> ADD
+		if (instr.instr_generic._immediate) { // Si adressage immédiat
+			pmach->_registers[instr.instr_generic._regcond] +=
+					instr.instr_immediate._value * cop; // R <- (R) + Val
+		} else {
+			ad_Data = get_adress(pmach, instr);
+			check_overflow(pmach, ad_Data, addr);
+			pmach->_registers[instr.instr_generic._regcond] +=
+					pmach->_data[ad_Data] * cop; // (R) <- R + Data[Addr]
+		}
 	}
 	refresh_condition(pmach, pmach->_registers[instr.instr_generic._regcond]);
 
@@ -166,65 +155,26 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 }
 
 
+
 /*\
- * \fn bool sub(Machine *pmach, Instruction instr, unsigned addr)
- * \brief Décodage et exécution de l'instruction SUB
+ * \fn bool call_branch(Machine *pmach, Instruction instr, unsigned addr)
+ * \brief Décodage et exécution des instructions CALL et BRANCH
  * \param pmach la machine/programme en cours d'exécution
  * \param instr l'instruction à exécuter
  * \param addr adresse de l'instruction
  * \return true
- */bool sub(Machine *pmach, Instruction instr, unsigned addr) {
-	unsigned ad_Data;
-	if (instr.instr_generic._immediate) { // Si adressage immédiat
-		pmach->_registers[instr.instr_generic._regcond] -=
-				instr.instr_immediate._value; // R <- (R) - Val
-	} else {
-		ad_Data = get_adress(pmach, instr);
-		check_overflow(pmach, ad_Data, addr);
-		pmach->_registers[instr.instr_generic._regcond] -=
-				pmach->_data[ad_Data]; // R <- (R) + Data[addr]
-	}
-	refresh_condition(pmach, pmach->_registers[instr.instr_generic._regcond]);
-
-	return true;
-}
-
-
-/*\
- * \fn bool branch(Machine *pmach, Instruction instr, unsigned addr)
- * \brief Décodage et exécution de l'instruction BRANCH
- * \param pmach la machine/programme en cours d'exécution
- * \param instr l'instruction à exécuter
- * \param addr adresse de l'instruction
- * \return true
- */bool branch(Machine *pmach, Instruction instr, unsigned addr) {
-	unsigned ad_Data;
+ */bool call_branch(Machine *pmach, Instruction instr, unsigned addr, Code_Op cop) {
 	check_not_immediate(instr, addr);
 	if (check_condition(pmach, instr, addr)) {
-		ad_Data = get_adress(pmach, instr);
-		pmach->_pc = ad_Data; // PC <- Addr
-	}
-	return true;
-}
-
-/*\
- * \fn bool call(Machine *pmach, Instruction instr, unsigned addr)
- * \brief Décodage et exécution de l'instruction CALL
- * \param pmach la machine/programme en cours d'exécution
- * \param instr l'instruction à exécuter
- * \param addr adresse de l'instruction
- * \return true
- */bool call(Machine *pmach, Instruction instr, unsigned addr) {
-	check_not_immediate(instr, addr);
-	if (check_condition(pmach, instr, addr)) {
-		check_overflow(pmach, pmach->_sp, addr);
-		pmach->_data[pmach->_sp] = pmach->_pc; // Data[SP] <- PC
-		check_stack(pmach, pmach->_sp--, addr); // on décrémente sp et verifie qu'on ne sort pas de la pile
+		if(cop == CALL){
+			check_overflow(pmach, pmach->_sp, addr);
+			pmach->_data[pmach->_sp] = pmach->_pc; // Data[SP] <- PC
+			check_stack(pmach, pmach->_sp--, addr); // on décrémente sp et verifie qu'on ne sort pas de la pile
+		}
 		pmach->_pc = get_adress(pmach, instr); // PC <- Addr
 	}
 	return true;
 }
-
 
 /*\
  * \fn bool ret(Machine *pmach, Instruction instr, unsigned addr)
@@ -261,7 +211,6 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 	return true;
 }
 
-
 /*\
  * \fn bool pop(Machine *pmach, Instruction instr, unsigned addr)
  * \brief Décodage et exécution de l'instruction POP
@@ -273,7 +222,7 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 	unsigned ad_Data;
 
 	check_not_immediate(instr, addr);
-	check_stack(pmach, ++pmach->_sp, addr); // on décrémente sp et verifie qu'on ne sort pas de la pile
+	check_stack(pmach, pmach->_sp++, addr); // on incrémente sp et verifie qu'on ne sort pas de la pile
 	ad_Data = get_adress(pmach, instr);
 	check_overflow(pmach, ad_Data, addr);
 	check_overflow(pmach, pmach->_sp, addr);
@@ -281,7 +230,6 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 
 	return true;
 }
-
 
 /*\
  * \fn bool decode_execute(Machine *pmach, Instruction instr)
@@ -298,17 +246,16 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 		error(ERR_ILLEGAL, addr);
 		return false;
 	case LOAD:
-		return load(pmach, instr, addr);
+		return modify_register(pmach, instr, addr, 0);
+	case ADD:
+		return modify_register(pmach, instr, addr, 1);
+	case SUB:
+		return modify_register(pmach, instr, addr, -1);
 	case STORE:
 		return store(pmach, instr, addr);
-	case ADD:
-		return add(pmach, instr, addr);
-	case SUB:
-		return sub(pmach, instr, addr);
 	case BRANCH:
-		return branch(pmach, instr, addr);
 	case CALL:
-		return call(pmach, instr, addr);
+		return call_branch(pmach, instr, addr, instr.instr_immediate._cop);
 	case RET:
 		return ret(pmach, instr, addr);
 	case PUSH:
