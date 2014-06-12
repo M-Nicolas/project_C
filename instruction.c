@@ -12,6 +12,7 @@ const char* condition_names[] = { "NC", "EQ", "NE", "GT", "GE", "LT", "LE" };
 
 //affiche les operandes des operations d'une instruction inst sous forme intelligible.
 void print_operande(Instruction instr) {
+    //On récuppére I et X pour choisir ce que l'on affiche
     bool immediate = instr.instr_generic._immediate; // immediate = I
     bool indexed = instr.instr_generic._indexed; // indexed = X
 
@@ -36,6 +37,8 @@ void print_operande(Instruction instr) {
  * \param addr son adresse
  */
 void print_instruction(Instruction instr, unsigned addr) {
+    //affiche le nom de l'opération en utilisant le code opération de l'instruction pour le réccupérer dans
+    //le tableau cop_names
     printf("%s ", cop_names[instr.instr_generic._cop]);
     int reg = instr.instr_generic._regcond;
 
