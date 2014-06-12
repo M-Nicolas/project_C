@@ -14,6 +14,7 @@
 
         LOAD    R03, +0[R01]
         STORE   R03, +0[R02]
+        HALT
         END
 
         DATA    30
