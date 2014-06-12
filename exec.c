@@ -316,6 +316,7 @@ void refresh_condition(Machine *pmach, unsigned int regcond) {
 	case POP:
 		return pop(pmach, instr, addr);
 	case HALT:
+		printf("\tWARNING: HALT signal at address 0x%x\n", addr);
 		return false;
 	default:
 		error(ERR_UNKNOWN, addr);
