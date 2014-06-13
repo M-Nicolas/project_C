@@ -24,29 +24,29 @@ void error(Error err, unsigned addr){
     case ERR_NOERROR:
         printf("ERROR: NO ERROR at address 0x%x\n", addr);
         break;
-    case ERR_UNKNOWN:
+    case ERR_UNKNOWN:   // Une instruction inconnu ( COP>=12 || COP<0 )
         printf("ERROR: UNKNOWN INSTRUCTION at address 0x%x\n", addr);
-        break;
-    case ERR_ILLEGAL:
+        exit(1);
+    case ERR_ILLEGAL:   // Une instruction illegal ( COP==0 )
         printf("ERROR: ILLEGAL INSTRUCTION at address 0x%x\n", addr);
-        break;
-    case ERR_CONDITION:
+        exit(1);
+    case ERR_CONDITION: // Une condition illegal
         printf("ERROR: ILLEGAL CONDITION at address 0x%x\n", addr);
-        break;
-    case ERR_IMMEDIATE:
+        exit(1);
+    case ERR_IMMEDIATE: // Une condition illegal ( I/X != true/false comme prevu)
         printf("ERROR: FORBIDDEN VALUE at address 0x%x\n", addr);
-        break;
-    case ERR_SEGTEXT:
+        exit(1);
+    case ERR_SEGTEXT:   // Le numero de registre est trop leve
         printf("ERROR: TEXT SEGMENT VIOLATION at address 0x%x\n", addr);
-        break;
-    case ERR_SEGDATA:
+        exit(1);
+    case ERR_SEGDATA:   // Le segment de data
         printf("ERROR: DATA SEGMENT VIOLATION at address 0x%x\n", addr);
-        break;
-    case ERR_SEGSTACK:
+        exit(1);
+    case ERR_SEGSTACK:  // On push ou pull trop dans une pile
         printf("ERROR: STACK SEGMENT VIOLATION at address 0x%x\n", addr);
-        break;
+        exit(1);
     default:
-        break;
+        exit(0);
     }
     exit(0);
 }

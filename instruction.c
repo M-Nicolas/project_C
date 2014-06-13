@@ -29,11 +29,11 @@ void print_operande(Instruction instr) {
     } else {                
         if (indexed) {
             // Si immediate = 0 et indexed = 1 nous sommes dans le cas d'un adressage indexe
-            printf("%+d[", (int) instr.instr_indexed._offset); // Offset sous la forme +/-offset
-            printf("R%02d]", (int) instr.instr_indexed._rindex); // Registre pour l'adressage indirect [R..]
+            printf("%+d[",instr.instr_indexed._offset); // Offset sous la forme +/-offset
+            printf("R%02d]",instr.instr_indexed._rindex); // Registre pour l'adressage indirect [R..]
         } else {
             // Si immediate = 0 et indexed = 0 : nous sommes dans le cas d'un adressage direct
-            printf("@%04x", (int) instr.instr_absolute._address);   
+            printf("@%04x",instr.instr_absolute._address);   
         }
     }
 }
