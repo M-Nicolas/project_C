@@ -8,6 +8,12 @@
 #include <math.h>
 #include <fcntl.h>
 
+//! Load Program
+/*! 
+ * Cette méthode initialise les instructions et les données (déjà aloués) d'une machine 
+ * avec les parametres donnés.
+ *
+ */
 void load_program(Machine *pmach,
                   unsigned textsize, Instruction text[textsize],
                   unsigned datasize, Word data[datasize],  unsigned dataend) {
@@ -26,6 +32,12 @@ void load_program(Machine *pmach,
     pmach->_sp=datasize-1;
 }
 
+//! Read Program
+/*! 
+ * Lis le fichier binaire "programfile" et initialise la machine en alouant correctement
+ * les variables
+ *
+ */
 void read_program(Machine *mach, const char *programfile) {
 
     int fd=open(programfile,O_RDONLY);
@@ -81,6 +93,11 @@ void read_program(Machine *mach, const char *programfile) {
 
 }
 
+//! Dump memory
+/*! 
+ * Affiche les instructions et les données en hexadecimal
+ * Puis écrit sur un fichier binaire le résultat de ces instructions 
+ */
 void dump_memory(Machine *pmach) {
 
     printf("Instruction text[] = {\n");
@@ -120,6 +137,13 @@ void dump_memory(Machine *pmach) {
 
 }
 
+//! Print Program
+/*! 
+ * Affiche à la sortie standard les instructions.
+ * Utilise la méthode print_instruction de instruction.c
+ *
+ * Affichage en hexadecimal de l'adresse des instructions ainsi que leur codage
+ */
 void print_program(Machine *pmach) {
     printf("\n*** Impression du programme (instructions) (Textsize= %d) ***\n\n",pmach->_textsize);
     for(int i = 0 ; i < pmach->_textsize ; i++)
@@ -132,6 +156,12 @@ void print_program(Machine *pmach) {
       }
 }
 
+//! Print Data
+/*! 
+ * Affiche à la sortie standard les données présentes dans la mémoire
+ *
+ * Affichage en hexadecimal et en décimal de la valeur des données
+ */
 void print_data(Machine *pmach) {
     printf("\n*** DATA Datasize= %d, end= 0x%08x (%d) ***\n\n",pmach->_datasize,pmach->_dataend,pmach->_dataend);
     for (int i=0;i<pmach->_datasize;i++) {
@@ -141,7 +171,13 @@ void print_data(Machine *pmach) {
     printf("\n");
 }
 
-
+//! Print CPU
+/*! 
+ * Affiche à la sortie standard le contenu de chacun des registres.
+ * Affiche aussi la valeur de PC ainsi que CC (résultat de la derniere opération)
+ *
+ * Affichage en hexadecimal ainsi qu'en décimal
+ */
 void print_cpu(Machine *pmach) {
     char c;
     switch(pmach->_cc) {
@@ -169,7 +205,12 @@ void print_cpu(Machine *pmach) {
     printf("\n");
 }
 
-
+//! Simulation
+/*! 
+ * Methode principale qui va executer toutes les instructions
+ * Si le mode debug est true, on va afficher les instructions une par une
+ *
+ */
 void simul(Machine *pmach, bool debug) {
     //Boucle sur les instructions
     while (1) {
