@@ -1,3 +1,8 @@
+/*!
+ * \file instruction.c
+ * \brief Affichange des instructions à l'écran
+ */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

@@ -1,3 +1,8 @@
+/*!
+ * \file machine.c
+ * \brief Description de la structure du processeur et de sa mémoire
+ */
+
 #include "machine.h"
 #include "exec.h"
 #include "debug.h"
