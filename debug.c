@@ -16,34 +16,36 @@ void print_help(){
 
 
 bool debug_ask(Machine *pmach){
-    printf("DEBUG? ");
-    char c=getchar();
-    switch (c) {
-    case 'h':
-        print_help();
-        break;
-    case 'c':
-        return false;
-    case 's':
-    case 'RET':
-        break;
-    case 'r':
-        print_cpu(pmach);
-        break;
-    case 'd':
-        print_data(pmach);
-        break;
-    case 't':
-    case 'p':
-        print_program(pmach);
-        break;
-    case 'm':
-        print_cpu(pmach);
-        print_data(pmach);
-        break;
-    default:
-        break;
-    }
+    char c='a';
+
+        printf("DEBUG? ");
+        scanf("%c",&c);
+
+            switch (c) {
+            case 'h':
+                print_help();
+                break;
+            case 'c':
+                return false;
+            case 's':
+                return true;
+            case 'R':
+                break;
+            case 'r':
+                print_cpu(pmach);
+                break;
+            case 'd':
+                print_data(pmach);
+                break;
+            case 't':
+            case 'p':
+                print_program(pmach);
+                break;
+            case 'm':
+                print_cpu(pmach);
+                print_data(pmach);
+                break;
+           }
     return true;
 }
 
