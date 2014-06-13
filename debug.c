@@ -45,6 +45,8 @@ bool debug_ask(Machine *pmach){
                 print_cpu(pmach);
                 print_data(pmach);
                 break;
+	    default:
+		return true;
            }
     return true;
 }
