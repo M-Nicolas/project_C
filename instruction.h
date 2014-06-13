@@ -136,6 +136,4 @@ extern const char *condition_names[];
  */
 void print_instruction(Instruction instr, unsigned addr);
 
-void print_operande(Instruction instr);
-
 #endif
