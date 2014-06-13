@@ -5,7 +5,7 @@
  * Il y a totalement douze operateurs. Quand on fait cop=12, il y a un erreur.
 */
 Instruction text[] = {
-//   type		 cop	imm	ind	regcond	operand
+//   type                cop	imm     ind     regcond	operand
 //-------------------------------------------------------------
     {.instr_immediate =  {12, 	 false, false, 	0, 	0	}},  // 0
  
