@@ -1,45 +1,46 @@
 //-----------------
 // Instructions
 //-----------------
-        TEXT 30
+			TEXT    30
 
-        // Programme principal
-main    EQU *
-        LOAD R00, @aa
-        LOAD R01, @bb
-        LOAD R02, +0[R00]
-	LOAD R03, +0[R01]
-        BRANCH NC, @pgcd
-        HALT 
-        NOP 
-        NOP 
-        NOP 
-        NOP
+main		EQU *
+			PUSH @a
+			PUSH @b
+			CALL NC, @pgcd
+			ADD R15, #2
+			STORE R01, @result
+			HALT
+			NOP
+			NOP
+			NOP
+			NOP
+			// Sous-programme
+pgcd		LOAD R00, 3[R15] // R00 = a
+			LOAD R01, 2[R15] // R01 = b
+			SUB R00, 2[R15] // a = a - b
+			BRANCH GT, @pos
+			BRANCH LT, @neg
+			BRANCH EQ, @return
 
-        // Sous-programme
-pgcd	EQU *
-        SUB R02, 0[R03]
-	BRANCH GT, @sous
-        BRANCH LT, @sous2
-sous    SUB R00, 0[R01]
-sous2	SUB R01, 0[R00]
-        STORE R00, 0[R08]
-	STORE R01, 0[R09]
-	LOAD R02, 0[R08]
-	LOAD R03, 0[R09]
-	SUB R02, 0[R03]
-	BRANCH NE, @pgcd
-        BRANCH EQ, @return
-return  RET
-        
-        END
-        
+pos		STORE R00, 3[R15]
+			BRANCH NC, @pgcd
+
+neg		LOAD R02, 2[R15] // R02 = b
+			SUB R02, 3[R15] // b = b - a
+			STORE R02, 2[R15]
+			BRANCH NC, @pgcd
+
+return	RET
+
+			END
 //-----------------
 // Données et pile
 //-----------------
-        DATA 30
-        
-aa	WORD 0x06
-bb      WORD 0x03
-        
-        END
+			DATA 10
+
+			WORD 0
+result	    WORD 0
+a			WORD 96
+b			WORD 36
+
+			END
