@@ -1,3 +1,7 @@
+/*!
+ * \file debug.c
+ * \brief Fonctions de mise au point interactive.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include "debug.h"
@@ -30,11 +34,13 @@ void print_help(){
  */
 
 bool debug_ask(Machine *pmach){
-    char* c=malloc(2*sizeof(char));
+    //char* s=malloc(2*sizeof(char));
         while(true){
             printf("DEBUG? ");
-            scanf("%s",c);
-            switch (c[0]) {
+            char c=getchar();
+            while(getchar() != '\n'){}
+            //scanf("%s",s);
+            switch (c) {
             case 'h':   // Imprimer les informations
                 print_help();
                 break;
@@ -43,7 +49,7 @@ bool debug_ask(Machine *pmach){
             case 's':   // Continue a la commande prochaine
                 return true;
             case 'R':   // Rien fait
-                break;
+                return true;
             case 'r':   // Imprimer les registres
                 print_cpu(pmach);
                 break;
@@ -58,11 +64,14 @@ bool debug_ask(Machine *pmach){
                 print_cpu(pmach);
                 print_data(pmach);
                 break;
-            default:
-                printf("Default mode: step by step");
+            case '\n':
                 return true;
+            default:
+                printf("Commande inconnu! 'h' pour voir HELP\n");
+                break;
            }
+
     }
-    return false;
+    return true;
 }
 
