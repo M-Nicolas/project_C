@@ -6,11 +6,13 @@
 //! Forme imprimable des codes operations
 const char* cop_names[] = { "ILLOP", "NOP", "LOAD", "STORE", "ADD", "SUB", "BRANCH", "CALL", "RET", "PUSH", "POP", "HALT" };
 
-
 //! Forme imprimable des conditions
 const char* condition_names[] = { "NC", "EQ", "NE", "GT", "GE", "LT", "LE" };
 
-//affiche les operandes des operations d'une instruction inst sous forme intelligible.
+//! Affiche les operandes des operations d'une instruction inst sous forme intelligible.
+/*!
+ * \param instr l'instruction a imprimer
+ */
 void print_operande(Instruction instr) {
     //On récuppére I et X pour choisir ce que l'on affiche
     bool immediate = instr.instr_generic._immediate; // immediate = I
