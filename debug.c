@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "debug.h"
 
 void print_help(){
@@ -16,12 +17,11 @@ void print_help(){
 
 
 bool debug_ask(Machine *pmach){
-    char c='a';
-
-        printf("DEBUG? ");
-        scanf("%c",&c);
-
-            switch (c) {
+    char* c=malloc(2*sizeof(char));
+        while(true){
+            printf("DEBUG? ");
+            scanf("%s",c);
+            switch (c[0]) {
             case 'h':
                 print_help();
                 break;
@@ -45,7 +45,10 @@ bool debug_ask(Machine *pmach){
                 print_cpu(pmach);
                 print_data(pmach);
                 break;
+            default:
+                continue;
            }
-    return true;
+    }
+    return false;
 }
 
